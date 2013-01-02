@@ -1,0 +1,49 @@
+{
+   "abstract" : "Build Moose objects from a data array",
+   "author" : [
+      "Sam Brain <samb@stanford.edu>"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Array-To-Moose",
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "Module::Build" : "0.38"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Array::GroupBy" : 0,
+            "Carp" : 0,
+            "Data::Dumper" : 0,
+            "Moose" : 0,
+            "MooseX::StrictConstructor" : 0,
+            "Params::Validate" : 0,
+            "Test::More" : 0,
+            "namespace::autoclean" : 0,
+            "version" : 0
+         }
+      }
+   },
+   "provides" : {
+      "Array::To::Moose" : {
+         "file" : "lib/Array/To/Moose.pm",
+         "version" : "0.01"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "license" : [
+         "http://dev.perl.org/licenses/"
+      ]
+   },
+   "version" : "0.01"
+}
