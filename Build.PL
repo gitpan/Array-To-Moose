@@ -18,6 +18,11 @@ my $builder = Module::Build->new(
         'Data::Dumper'              => 0,
         'version'                   => 0,
     },
+
+    configure_requires => {
+        'Module::Build' => 0.38
+    },
+
     add_to_cleanup      => [ 'Array-To-Moose-*' ],
 );
 

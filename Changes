@@ -3,3 +3,6 @@ Revision history for Array-To-Moose
 0.0.1  Tuesday 01 19:30:44 2013
        Initial release.
 
+0.0.2  Wednesday 02 Jan 2013
+       Corrected some POD errors, mainly links (L<...>)
+

@@ -15,7 +15,7 @@ name: Array-To-Moose
 provides:
   Array::To::Moose:
     file: lib/Array/To/Moose.pm
-    version: 0.01
+    version: v0.0.2
 requires:
   Array::GroupBy: 0
   Carp: 0
@@ -28,4 +28,4 @@ requires:
   version: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.01
+version: v0.0.2

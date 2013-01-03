@@ -28,7 +28,7 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.01';
+use version; our $VERSION = qv('0.0.2');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -366,7 +366,8 @@ C<throw_nonunique_keys()> and C<throw_multiple_rows()> if requested.
 
 C<array_to_moose()> builds Moose objects from suitably-sorted
 2-dimensional arrays of data of the type returned by, e.g.,
-L<DBI::selectall_arrayref()>, i.e.  a reference to an array containing
+L<DBI::selectall_arrayref()|DBI/selectall_arrayref>
+i.e.  a reference to an array containing
 references to an array for each row of data fetched.
 
 =head2 Example 1
@@ -581,7 +582,7 @@ As shown in the above examples, the general usage is:
   ...
   use Array::To::Moose;
   ...
-  my $data_ref = fetchall_arrayref($sql); # for example
+  my $data_ref = selectall_arrayref($sql); # for example
 
   my $object_ref =  array_to_moose(
                         data => $data_ref
@@ -731,7 +732,7 @@ C<array_to_moose>
 will silently overwrite the 2005 Employer object with the data for the
 2006 Employer object:
 
-  print $object->[0]->Employers->{'Acme Corp'}->year, "\n"; # prints '2006'
+  print $obj->[0]->Employers->{'Acme Corp'}->year, "\n"; # prints '2006'
 
 Calling C<throw_uniq_keys()> (either with no argument, or with a non-zero
 argument) enables reporting of non-unique keys. In the above example,
@@ -849,9 +850,12 @@ object evaluations are carried out depth-first.
 
 =head2 Treatment of C<NULL>s
 
-C<array_to_moose()> uses C<Array::GroupBy::igroup_by> to compare the rows in
+C<array_to_moose()> uses
+L<Array::GroupBy::igroup_by|Array::GroupBy.pm/DESCRIPTION>
+to compare the rows in
 the data given in C<data =E<gt> ...>, using function
-C<Array::GroupBy::str_row_equal()> which compares the data as I<strings>.
+L<Array::GroupBy::str_row_equal()|Array::GroupBy.pm/Routines_str_row_equal()_and_num_row_equal()>
+which compares the data as I<strings>.
 
 If the data contains C<undef> values, typically returned from
 database SQL queries in which L<DBI> maps NULL values to C<undef>, when
@@ -875,33 +879,11 @@ C<set_key_ind> if requested.
 
 =head1 DIAGNOSTICS
 
-set_key_ind() argument not defined
-croak "set_class_ind() argument not defined"
-croak "No class => ..."
-Class '$class' not defined
-Attribute '$name' not in '$class' object
+Errors in the call of C<array-to-moose()> will be caught by
+L<Params::Validate>, q.v.
 
-(test if 'class' or 'key' isn't also an attribute)
-the '$class' object has an attribute called '$name'
-no data in data => ...
-found a ref in attribs:
-(column#) $msg must be a +ve integer
-(column#) greater than # cols in the data
-'array_to_moose(desc => ...)' arg has an odd number of members
-empty descriptor
-no '$CLASS' defined in descriptor:
-can't delete '$CLASS' element of descriptor
-can't delete '$KEY' element of descriptor
-attribute '$name' can't be a '$ref' reference
-no attributes with column numbers in descriptor:
-Moose attribute '$attr_name' has no type
-
-
-desc generated a '", ref $sub_obj, "' object and "
-              . "not the expected array. desc = "
-
-Note that its the user's responsibility to make sure that the types of data in
-the AoA matches the Moose attributes.
+<array-to-moose> does a lot of error checking, and is probably annoyingly
+chatty. Most of the errors generated are, of course, self-explanatory :-)
 
 =head1 DEPENDENCIES
 
@@ -931,8 +913,7 @@ at your option, any later version of Perl 5 you may have available.
 
 # TODO
 #
-# - catch data mismatch, eg data => contains non-numeric, but Moose attrib is
-# numeric
+# test for non-square data array?
 #
 # - allow argument "compare => sub {...}" in array_to_moose() call to
 # allow a user-defined row-comparison routine to be passed to
@@ -943,7 +924,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  1 Jan 2013 21:27   #
+#   on  2 Jan 2013 22:05   #
 #                          #
 ############################
 
