@@ -3,6 +3,8 @@ Changes
 ignore.txt
 lib/Array/To/Moose.pm
 MANIFEST			This list of files
+META.json
+META.yml
 README
 t/00.load.t
 t/1.t
@@ -26,7 +28,8 @@ t/9.t
 t/pod-coverage.t
 t/pod.t
 t/readme.txt
+t/release-eol.t
+t/release-no-tabs.t
+t/release-pod-coverage.t
 t/tests.txt
 t/TODO
-META.yml
-META.json

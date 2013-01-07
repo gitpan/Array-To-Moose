@@ -18,7 +18,7 @@ BEGIN {
   eval "use Test::Exception";
   plan skip_all => "Test::Exception needed" if $@;
 }
-  
+
 plan tests => 25;
 
 
@@ -137,7 +137,7 @@ lives_ok {
 throws_ok {
   _check_attribs($data, {
                           # no 'class'
-                          last => 0, gender => 2 
+                          last => 0, gender => 2
                         }
                 );
          } qr/No class descriptor 'class =>/,
@@ -182,7 +182,7 @@ set_class_ind('CLASS');
 
 lives_ok {
   _check_attribs($data,{ CLASS => 'Obj_Attr_class', name => 0 })
-          } 
+         }
           "object with attribute called 'class' - fixed with set_class_ind()";
 
 # but now this will fail

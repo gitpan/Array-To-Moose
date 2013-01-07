@@ -7,8 +7,8 @@ use Test::More tests => 4;
 # one-level data only, but using different "class" and "key" keywords
 # and also testing that the defaults get reset OK
 
-# these should be removed for production
-use VarianReportsMoose qw(print_obj);
+eval 'use VarianReportsMoose qw(print_obj)';
+
 use Data::Dumper;
 
 use Array::To::Moose qw (:ALL :TESTING);

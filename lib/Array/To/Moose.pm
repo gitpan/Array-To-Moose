@@ -25,10 +25,10 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'ALL'} }, @{ $EXPORT_TAGS{'TESTING'} } );
 
 our @EXPORT = qw(
-	
+
 );
 
-use version; our $VERSION = qv('0.0.2');
+use version; our $VERSION = qv('0.0.3');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -163,10 +163,10 @@ sub _check_attribs {
   return ($meta, $attrib, $sub_obj_desc);
 }
 
-##########  
+##########
 # Usage
 #   my $moose_object_ref = array_to_moose( data => $array_ref,
-#                                          desc => { ... }, 
+#                                          desc => { ... },
 #                                        );
 #
 # This is the new version which figgers out what the attributes should be
@@ -204,7 +204,7 @@ sub array_to_moose {
 
   }
 
-  # $attrib is a hash of attribute/column number values 
+  # $attrib is a hash of attribute/column number values
   # $sub_obj_desc is a (possible empty) hash of sub-objects descriptors
   # the keys are the attrib. names, the value is the hash ref of the
   # descriptor of the next level down
@@ -266,9 +266,9 @@ sub array_to_moose {
       # optionally croak if we are overwriting an existing hash entry
       croak "Non-unique key '$key_name' in '", $desc->{$CLASS}, "' class"
         if exists $result->{$key_name} and $throw_nonunique_keys;
-        
+
       $result->{$key_name} = $obj;
-    } else {  
+    } else {
       push @{$result}, $obj;
     }
   }
@@ -318,7 +318,7 @@ sub _check_types {
 
     # not an ArrayRef[] or HashRef[] but an Obj ref
 
-    croak "desc generated a '" . ref $sub_obj 
+    croak "desc generated a '" . ref $sub_obj
           . "' object and not the expected array"
       unless ref $sub_obj eq 'ARRAY';
 
@@ -347,14 +347,14 @@ __END__
 
 Array::To::Moose - Build Moose objects from a data array
 
-=head1 VERSION 
+=head1 VERSION
 
-This document describes Array::To::Moose version 0.0.1
+This document describes Array::To::Moose version 0.0.3
 
 =head1 SYNOPSIS
 
   use Array::To::Moose;
-  # or 
+  # or
   use Array::To::Moose qw(array_to_moose set_class_ind set_key_ind
                           throw_nonunique_keys throw_multiple_rows   );
 
@@ -491,7 +491,7 @@ I<Visit> table, which in turn would have a one-to-many relationship with
 the I<Test> table
 
 The corresponding Moose model has nested Moose objects which reflects those
-one-to-many relationships, i.e., 
+one-to-many relationships, i.e.,
 multiple Visit objects per Patient object and multiple Test objects
 per Visit object, declared as:
 
@@ -616,7 +616,7 @@ C<class =E<gt>> ... is I<required> and defines the Moose class or
 package which will contain the data. The user should have defined this class
 already.
 
-C<key =E<gt> >... is required 
+C<key =E<gt> >... is required
 if the Moose object being constructed is to be a hashref, either as
 the top-level Moose object returned from C<array_to_moose()> or as a
 "C<isa =E<gt> 'HashRef[...]'>" sub-object.
@@ -684,7 +684,7 @@ I<Patient> data the slowest:
 In SQL this would be accomplished by a C<SORT BY> clause, e.g.:
 
   SORT BY Patient.Key, Visit.Key, Test.Key
-    
+
 =head2 throw_nonunique_keys ()
 
 By default, C<array_to_moose()> does not check the uniqueness of hash key
@@ -738,7 +738,7 @@ Calling C<throw_uniq_keys()> (either with no argument, or with a non-zero
 argument) enables reporting of non-unique keys. In the above example,
 C<array_to_moose()> would exit with warning:
 
- Non-unique key 'Acme Corp' in 'Employer' class ... 
+ Non-unique key 'Acme Corp' in 'Employer' class ...
 
 Calling C<throw_uniq_keys(0)>, i.e. with an argument of zero will disable
 subsequent reporting of non-unique keys.
@@ -833,7 +833,7 @@ For example:
                         }
   );
 
- 
+
 =head2 Read-only Attributes
 
 One of the recommendations of L<Moose::Manual::BestPractices>
@@ -924,7 +924,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  2 Jan 2013 22:05   #
+#   on  5 Jan 2013 21:43   #
 #                          #
 ############################
 

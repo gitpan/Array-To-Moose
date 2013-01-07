@@ -7,8 +7,8 @@ use Test::More tests => 3;
 # Construct Moose objects with one level only (i.e. no sub-objects),
 # as array and hash
 
-# these should be removed for production
-use VarianReportsMoose qw(print_obj);
+eval 'use VarianReportsMoose qw(print_obj)';
+
 use Data::Dumper;
 
 use Array::To::Moose qw (:ALL :TESTING);

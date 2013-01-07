@@ -9,8 +9,8 @@ use Test::More tests => 1;
 
 use Array::To::Moose qw (:ALL);
 
-# remove these when testing "done"
-use VarianReportsMoose qw(print_obj);
+eval 'use VarianReportsMoose qw(print_obj)';
+
 use Data::Dumper;
 
 use Carp;

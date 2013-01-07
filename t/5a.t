@@ -8,8 +8,8 @@ use Test::More tests => 1;
 
 use Array::To::Moose qw (:ALL);
 
-# remove these when testing "done"
-use VarianReportsMoose qw(print_obj);
+eval 'use VarianReportsMoose qw(print_obj)';
+
 use Data::Dumper;
 
 use Carp;
@@ -49,9 +49,9 @@ Patient->meta->make_immutable;
 
 package main;
 
-#   patient  |    visit    |   test   
+#   patient  |    visit    |   test
 # last  first|visit_date md|name result
-# 0     1     2          3  4    5    <- column index 
+# 0     1     2          3  4    5    <- column index
 
 package main;
 
@@ -157,7 +157,7 @@ my $expected = [
 
 # <-    patient    -> <-  visit  -> <- test  ->
 # patient_id name age md visit_date name result
-# 0          1    2   3  4          5    6      <- column index 
+# 0          1    2   3  4          5    6      <- column index
 
 my $object = array_to_moose(
                         data => $data,

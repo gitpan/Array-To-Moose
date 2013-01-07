@@ -15,8 +15,8 @@ BEGIN {
 
 plan tests => 3;
 
-# remove these when testing "done"
-use VarianReportsMoose qw(print_obj);
+eval 'use VarianReportsMoose qw(print_obj)';
+
 use Data::Dumper;
 
 use Carp;
