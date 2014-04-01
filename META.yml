@@ -6,7 +6,7 @@ build_requires: {}
 configure_requires:
   Module::Build: 0.38
 dynamic_config: 1
-generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.110930'
+generated_by: 'Module::Build version 0.4205, CPAN::Meta::Converter version 2.132510'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -15,7 +15,7 @@ name: Array-To-Moose
 provides:
   Array::To::Moose:
     file: lib/Array/To/Moose.pm
-    version: v0.0.3
+    version: v0.0.4
 requires:
   Array::GroupBy: 0
   Carp: 0
@@ -28,4 +28,4 @@ requires:
   version: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: v0.0.3
+version: v0.0.4

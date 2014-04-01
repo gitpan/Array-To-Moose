@@ -19,22 +19,23 @@ our %EXPORT_TAGS = (
     'ALL'     => [ qw( array_to_moose
                        throw_nonunique_keys throw_multiple_rows
                        set_class_ind set_key_ind               ) ],
-    'TESTING' => [ qw( _check_attribs _check_types             ) ],
+    'TESTING' => [ qw( _check_descriptor _check_subobj
+                       _check_rattribs                         ) ],
 );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'ALL'} }, @{ $EXPORT_TAGS{'TESTING'} } );
 
-our @EXPORT = qw(
+our @EXPORT = qw( array_to_moose 
 
 );
 
-use version; our $VERSION = qv('0.0.3');
+use version; our $VERSION = qv('0.0.4');
 
 # BEGIN { $Exporter::Verbose=1 };
 
 #BEGIN { print "Got Array::To:Moose Module\n" }
 
-use Params::Validate qw(:all);
+use Params::Validate::Array qw(:all);
 use Array::GroupBy qw(igroup_by str_row_equal);
 use Carp;
 use Data::Dumper;
@@ -88,100 +89,18 @@ sub throw_nonunique_keys { $throw_nonunique_keys = defined $_[0] ? $_[0] : 1 }
 ########################################
 sub throw_multiple_rows { $throw_multiple_rows = defined $_[0] ? $_[0] : 1 }
 
-############################################
-# Usage: my ($meta, $attrib, $sub_obj_desc)
-#                  = _check_attribs($data, $desc)
-#
-# Redo###
-# Throws an exception if the class has not been defined, or if the
-# attributes whose names are the keys of %my_attribs are not in the class
-# Also throws exception if 'class' (or 'key' if used in the
-# "keyword => " data) is an attribute of the class.
-#
-# Returns the class meta object
-############################################
-sub _check_attribs {
-  my ($data, $desc) = @_;
-
-  croak "_check_attribs() needs two arguments"
-    unless @_ == 2;
-
-  my $class = $desc->{$CLASS}
-    or croak "No class descriptor '$CLASS => ...' in descriptor:\n", Dumper($desc);
-
-  my $meta;
-
-  eval{ $meta = $class->meta };
-  croak "Class '$class' not defined"
-    if $@;
-
-  my $ncols = @{ $data->[0] };
-
-  # separate out the attributes and optional sub-objects
-  my ($attrib, $sub_obj_desc);
-
-  while ( my ($name, $value) =  each %$desc) {
-
-    # check column ranges
-    unless (ref($value) or $name eq $CLASS) {
-
-      my $msg = "attribute '$name => $value'";
-
-      croak "$msg must be a +ve integer"
-        unless $value =~ /^\d+$/;
-
-      croak "$msg greater than # cols in the data ($ncols)"
-        if $value > $ncols - 1;
-    }
-
-    # check to see if there are attributes called 'class' or 'key'
-    if ($name eq $CLASS or $name eq $KEY) {
-      croak "The '$class' object has an attribute called '$name'"
-        if $meta->find_attribute_by_name($name);
-      next;
-    }
-
-    croak "Attribute '$name' not in '$class' object"
-      unless $meta->find_attribute_by_name($name);
-
-    my $ref = ref($value);
-
-    if ($ref eq 'HASH') {
-      $sub_obj_desc->{$name} = $value;
-
-    } elsif ($ref) {
-      croak "attribute '$name' can't be a '$ref' reference";
-
-    } else {
-      $attrib->{$name} = $value;
-    }
-  }
-
-  croak "no attributes with column numbers in descriptor:\n", Dumper($desc)
-    unless $attrib and %$attrib;
-
-  return ($meta, $attrib, $sub_obj_desc);
-}
-
 ##########
 # Usage
 #   my $moose_object_ref = array_to_moose( data => $array_ref,
 #                                          desc => { ... },
 #                                        );
-#
-# This is the new version which figgers out what the attributes should be
-# from the type of the Moose attributes, e.g., 'Arrayref[...]', 'HashRef[...]',
-# etc
 ############################################
 sub array_to_moose {
-  # to do this in one step is *ugly*: (...) = @{ { v() } }{ qw(...) }
-  # so leave as two steps
-  my %opts = validate(@_, { data => { type => ARRAYREF },
+  my ($data, $desc) = validate(@_,
+                          [ data => { type => ARRAYREF },
                             desc => { type => HASHREF  },
-                          }
+                          ]
   );
-
-  my ($data, $desc) = @opts{ qw(data desc) };
 
   croak "'data => ...' isn't a 2D array (AoA)"
     unless ref($data->[0]);
@@ -192,7 +111,7 @@ sub array_to_moose {
   #print "data ", Dumper($data), "\ndesc ", Dumper($desc);
 
 
-  my $result = [];        # returned result either an array or a hash of objects
+  my $result = [];   # returned result is either an array or a hash of objects
 
   # extract column of possible hash key
   my $keycol;
@@ -200,38 +119,72 @@ sub array_to_moose {
   if (exists $desc->{$KEY}) {
     $keycol = $desc->{$KEY};
 
-    $result = {};         # we will be returning a hashref
+    $result = {};         # returning a hashref
 
   }
 
-  # $attrib is a hash of attribute/column number values
-  # $sub_obj_desc is a (possible empty) hash of sub-objects descriptors
-  # the keys are the attrib. names, the value is the hash ref of the
-  # descriptor of the next level down
+  # _check_descriptor returns:
+  # $class,       the class of the object
+  # $attribs,     a hashref (attrib => column_number) of "simple" attributes
+  #               (column numbers only)
+  # $ref_attribs, a hashref of attribute/column number values for
+  #               non-simple attributes, currently limited to "ArrayRef[`a]",
+  #               where `a is e.g 'Str', etc (i.e. `a is not a class)
+  # $sub_desc,    a hashref of sub-objects.
+  #               the keys are the attrib. names, the values the
+  #               descriptors of the next level down
 
-  my ($meta, $attrib, $sub_obj_desc) = _check_attribs($data, $desc);
+  my ($class, $attribs, $ref_attribs, $sub_obj_desc) =
+            _check_descriptor($data, $desc);
 
-  # print "data ", Dumper($data), "\nattrib = ", Dumper($attrib),
-  #       "\nargs = ", Dumper([ values %$attrib ]);
+  #print "data ", Dumper($data), "\nattrib = ", Dumper($attribs),
+  #      "\nargs = ", Dumper([ values %$attribs ]);
+
+  #print "\$ref_attribs ", Dumper($ref_attribs); exit;
+
+  # check ref- and non-ref attributes from the descriptor against the Moose object
+  _check_non_ref_attribs($class, $attribs)
+    if $attribs;
+
+  _check_ref_attribs($class, $ref_attribs)
+    if $ref_attribs;
 
   my $iter = igroup_by(
                 data    => $data,
                 compare => \&str_row_equal,
-                args    => [ values %$attrib ],
+                args    => [ values %$attribs ],
   );
 
   while (my $subset = $iter->()) {
 
     #print "subset: ", Dumper($subset), "\n";
 
-    # hash of Moose sub-objects: key is the attribute name, value the Moose
-    # sub-object
-    my %sub_objs;  # hash of Moose sub-objects
+    #print "before 1: attrib ", Dumper($attribs), "\ndata ", Dumper($subset);
 
-    # make the sub-objects first
+    # change attribs from col numbers to values:
+    # from:  { name => 1,           sex => 2,      ... }
+    # to     { name => 'Smith, J.', sex => 'male', ... }
+    my %attribs = map { $_ => $subset->[0]->[$attribs->{$_}] } keys %$attribs;
+   
+
+    # print "after 1: attrib ", Dumper(\%attribs), "\n";
+
+    # add the 'simple ArrayRef' sub-objects
+    # (there should really be only one of these - test for it?)
+    while (my($attr_name, $col) = each %$ref_attribs) {
+      my @col = map { $_->[$col] } @$subset;
+      $attribs{$attr_name} = \@col;
+
+      # ... or ...
+      #$attribs{$attr_name} = [ map { $_->[$col] } @$subset ];
+    }
+
+    # print "after 2: attrib ", Dumper(\%attribs), "\n";
+
+    # sub-objects - recursive call to array_to_moose()
     while( my($attr_name, $desc) = each %$sub_obj_desc) {
 
-      my $type = $meta->get_attribute($attr_name)->type_constraint
+      my $type = $class->meta->find_attribute_by_name($attr_name)->type_constraint
         or croak "Moose attribute '$attr_name' has no type";
 
       #print "'$attr_name' has type '$type'";
@@ -240,24 +193,18 @@ sub array_to_moose {
                                     desc => $desc,
                                   );
 
-      $sub_obj = _check_types($attr_name, $type, $sub_obj);
+      $sub_obj = _check_subobj($class, $attr_name, $type, $sub_obj);
 
       #print "type $type\n";
 
-      $sub_objs{$attr_name} = $sub_obj;
+      $attribs{$attr_name} = $sub_obj;
     }
 
-    #print "before: attrib ", Dumper($attrib), "\ndata ", Dumper($subset);
-
-    # change %attrib from: { name => 1, sex => 2, ...}
-    # to { name => 'Smith, J.', sex => 'male', ... }
-    my %attrib = map { $_ => $subset->[0]->[$attrib->{$_}] } keys %$attrib;
-
-    # print "after attrib ", Dumper(\%attrib), "\n";
+    # print "after 2: attrib ", Dumper(\%attribs), "\n";
 
     my $obj;
-    eval { $obj = $meta->new_object(%attrib, %sub_objs) };
-    croak "Can't make a new '" . $desc->{$CLASS} . "' object:\n$@\n"
+    eval { $obj = $class->meta->new_object(%attribs) };
+    croak "Can't make a new '$class' object:\n$@\n"
           if $@;
 
     if (defined $keycol) {
@@ -275,14 +222,145 @@ sub array_to_moose {
   return $result;
 }
 
-########################################
-# Usage: $sub_obj = _check_types($attr_name, $type, $sub_obj);
+############################################
+# Usage: my ($class, $attribs, $ref_attribs, $sub_desc)
+#                  = _check_descriptor($data, $desc)
 #
-# Checks that the descriptor's idea of the object type ($type) agrees
-# with the Moose declaration.
+# Check the correctness of the descriptor hashref, $desc.
+#
+# Checks of descriptor $desc include:
+# 1. "class => 'MyClass'" line exists, and that class "MyClass" has
+#                         been defined
+# 2. for "attrib => N" 
+#     or "key    => N" lines, N, the column number, is an integer, and that
+#                      the column numbers is within limits of the data
+# 3. For "attrib => [N]", (note square brackets), N, the columnn number,
+#                         is within limits of the data
+#
+# Returns:
+# $class,      the class name,
+# $attribs,    hashref (name => column_index) of "simple" attributes
+# $ref_attribs hashref (name => column_index) of attribs which are
+#               ArrayRef[']s of simple types (i.e. not a Class)
+#               (HashRef[']s not implemented)
+# $sub_desc    hashref (name => desc) of sub-object descriptors
+############################################
+sub _check_descriptor {
+  my ($data, $desc) = @_;
+
+  # remove from production!
+  croak "_check_descriptor() needs two arguments"
+    unless @_ == 2;
+
+  my $class = $desc->{$CLASS}
+    or croak "No class descriptor '$CLASS => ...' in descriptor:\n",
+       Dumper($desc);
+
+  my $meta;
+
+  # see other example of getting meta in Moose::Manual::???
+  eval{ $meta = $class->meta };
+  croak "Class '$class' not defined: $@"
+    if $@;
+
+  my $ncols = @{ $data->[0] };
+
+  # separate out simple (i.e. non-reference) attributes, reference
+  # attributes, and sub-objects
+  my ($attrib, $ref_attrib, $sub_desc);
+
+  while ( my ($name, $value) =  each %$desc) {
+
+    # check lines which have 'simple' column numbers ( attrib or key => N)
+    unless (ref($value) or $name eq $CLASS) {
+
+      my $msg = "attribute '$name => $value'";
+
+      croak "$msg must be a (non-negative) integer"
+        unless $value =~ /^\d+$/;
+
+      croak "$msg greater than # cols in the data ($ncols)"
+        if $value > $ncols - 1;
+    }
+
+    # check to see if there are attributes called 'class' or 'key'
+    if ($name eq $CLASS or $name eq $KEY) {
+      croak "The '$class' object has an attribute called '$name'"
+        if $meta->find_attribute_by_name($name);
+
+      next;
+    }
+
+    croak "Attribute '$name' not in '$class' object"
+      unless $meta->find_attribute_by_name($name);
+
+    if ((my $ref = ref($value)) eq 'HASH') {
+      $sub_desc->{$name} = $value;
+
+    } elsif ($ref eq 'ARRAY') {
+      # descr entry looks like, e.g.:
+      #   attrib => [6],
+      #
+      # ( or attrib => [key => 6, value => 7],  in future... ?)
+
+      croak "attribute must be of form, e.g.: '$name => [6],'"
+        unless @$value == 1;
+
+      my $msg = "attribute '$name => [ " . $value->[0] . " ]'. '" .
+                  $value->[0] . "'";
+
+      croak "$msg must be a (non-negative) integer"
+        unless $value->[0]  =~ /^\d+$/;
+
+      croak "$msg greater than # cols in the data ($ncols)"
+        if $value->[0] > $ncols - 1;
+
+      $ref_attrib->{$name} = $value->[0];
+
+    } elsif ($ref) {
+      croak "attribute '$name' can't be a '$ref' reference";
+
+    } else {
+      # "simple" attribute
+      $attrib->{$name} = $value;
+    }
+  }
+
+  croak "no attributes with column numbers in descriptor:\n", Dumper($desc)
+    unless $attrib and %$attrib;
+
+  return ($class, $attrib, $ref_attrib, $sub_desc);
+}
+
 ########################################
-sub _check_types {
-  my ($attr_name, $type, $sub_obj) = @_;
+# Usage: $sub_obj = _check_subobj($class, $attr_name, $type, $sub_obj);
+#
+# $class        is the name of the current class
+# $attr_name    is the name of the attribute in the descriptor, e.g.
+#               MyObjs => { ... } (used only diagnostic messages)
+# $type         is the expected Moose type of the sub-object
+#               i.e. 'HashRef[MyObj]', 'ArrayRef[MyObj]', or 'MyObj'
+# $sub_obj_ref  Reference to the data to be stored in the sub-object,
+#               i.e. isa => 'HashRef[MyObj]', isa => 'ArrayRef[MyObj]',
+#               or isa => 'MyObj'
+#
+#
+# Checks that the data in $sub_obj_ref agrees with the type of the object to
+# contain it
+# if $type is a ref to an object (isa => 'MyObj'), _check_subobj() converts
+# $sub_obj_ref from an arrayref to sub-object to ref to a subobj
+# (see notes in code below)
+#
+# Throws error is it finds a type mis-match
+########################################
+sub _check_subobj {
+  my ($class, $attr_name, $type, $sub_obj) = @_;
+
+  # for now...
+  croak "_check_subobj() should have 4 args" unless @_ == 4;
+
+  #my $type = $class->meta->find_attribute_by_name($attr_name)->type_constraint
+  #  or croak "Moose class '$class' attribute '$attr_name' has no type";
 
   if ( $type =~ /^HashRef\[([^]]*)\]/ ) {
 
@@ -316,7 +394,10 @@ sub _check_types {
 
   } else {
 
-    # not an ArrayRef[] or HashRef[] but an Obj ref
+    # not isa => 'ArrayRef[MyObj]' or 'HashRef[MyObj]' but isa => 'MyObj',
+    # *but* since array_to_moose() can return only a hash- or arrayref of Moose
+    # objects, $sub_obj will be an arrayref of Moose objects, which we convert to a
+    # ref to an object
 
     croak "desc generated a '" . ref $sub_obj
           . "' object and not the expected array"
@@ -327,6 +408,7 @@ sub _check_types {
         scalar @$sub_obj, " of them"
       if @$sub_obj != 1 and $throw_multiple_rows;
 
+    # convert from arrayref of objects to ref to object
     $sub_obj = $sub_obj->[0];
 
     # print "\$sub_obj type is ", ref($sub_obj), "\n";
@@ -339,6 +421,124 @@ sub _check_types {
   return $sub_obj;
 }
 
+{
+
+  # The Moose type hierarchy (from Moose::Manual::Types) is:
+  # Any
+  # Item
+  #     Bool
+  #     Maybe[`a]
+  #     Undef
+  #     Defined
+  #         Value
+  #             Str
+  #                 Num
+  #                     Int
+  #                 ClassName
+  #                 RoleName
+  #         Ref
+  #             ScalarRef[`a]
+  #             ArrayRef[`a]
+  #             HashRef[`a]
+  #             CodeRef
+  #             RegexpRef
+  #             GlobRef
+  #                 FileHandle
+  #             Object
+
+  # So the test for 
+
+  my %simple_types;
+
+  BEGIN
+  {
+    %simple_types = map { $_ => 1 }
+      qw ( Any Item Bool Undef Defined Value Str Num Int );
+  }
+
+########################################
+# Usage:
+#   _check_ref_attribs($class, $ref_attribs);
+# Checks that "reference" attributes from the descriptor (e.g., attr => [N])
+# are ArrayRef[]'s of simple attributes in the Moose object
+# (e.g., isa => ArrayRef['Str'])
+# Throws an exception if check fails
+#
+# where:
+#   $class is the current Moose class
+#   $ref_attribs an hashref of Moose attributes which are "ref
+#   attributes", e.g., " has 'hobbies' (isa => 'ArrayRef[Str]'); "
+#
+########################################
+sub _check_ref_attribs {
+  my ($class, $ref_attribs) = @_;
+
+  my $meta = $class->meta
+    or croak "No meta for class '$class'?";
+
+  foreach my $attrib ( keys $ref_attribs ) {
+    my $msg = "Moose class '$class' ref attrib '$attrib' ";
+
+    my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
+      or croak "$msg has no type constraint";
+
+    #print "_check_ref_attribs(): $attrib $constraint\n";
+
+    if ($constraint =~ /^ArrayRef\[([^]]*)\]/ ) {
+
+      croak "$msg has bad type '$constraint' ('$1' is not a simple type)"
+        unless $simple_types{$1};
+
+      return;
+    }
+    croak "$msg must be an ArrayRef[`a] and not a '$constraint'";
+  }
+}
+
+
+########################################
+# Usage:
+#   _check_non_ref_attribs($class, $non_ref_attribs);
+# Checks that non-ref attributes from the descriptor (e.g., attr => N)
+# are indeed simple attributes in the Moose object (e.g., isa => 'Str')
+# Throws an exception if check fails
+#
+#
+# where:
+#   $class is the current Moose class
+#   @non_ref_attribs an array of names of Moose attributes which are 
+#   non-reference, or "simple" attributes like 'Str', 'Int', etc.
+#
+########################################
+sub _check_non_ref_attribs {
+  my ($class, $attribs) = @_;
+
+  my $meta = $class->meta
+    or croak "No meta for class '$class'?";
+
+  foreach my $attrib ( keys $attribs) {
+    my $msg = "Moose class '$class', attrib '$attrib'";
+
+    my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
+      or croak "$msg has no type (isa => ...)";
+
+    #print "_check_non_ref_attribs(): $attrib $constraint\n";
+
+    next if $simple_types{$constraint};
+
+    $msg = "$msg has type '$constraint', but your descriptor had '$attrib => " 
+         . $attribs->{$attrib} . "'.";
+
+    $msg .= " (Did you forget the '[]' brackets?)"
+      if $constraint =~ /^ArrayRef/;
+      
+    croak $msg;
+  }
+}
+      
+} # end of local block
+
+
 1;
 
 __END__
@@ -349,7 +549,7 @@ Array::To::Moose - Build Moose objects from a data array
 
 =head1 VERSION
 
-This document describes Array::To::Moose version 0.0.3
+This document describes Array::To::Moose version 0.0.4
 
 =head1 SYNOPSIS
 
@@ -370,7 +570,7 @@ L<DBI::selectall_arrayref()|DBI/selectall_arrayref>
 i.e.  a reference to an array containing
 references to an array for each row of data fetched.
 
-=head2 Example 1
+=head2 Example 1a
 
   package Car;
   use Moose;
@@ -419,6 +619,8 @@ references to an array for each row of data fetched.
 
   print $CarOwners->[2]->Cars->[1]->model; # prints "Camry"
 
+=head2 Example 1b - Hash(ref) Sub-objects
+
 In the above example, C<array_to_moose()> returns a reference to an
 B<array> of C<CarOwner> objects, C<$CarOwners>.
 
@@ -456,8 +658,8 @@ Similarly, to construct the C<Cars> sub-objects as I<hash> sub-objects
   has 'first' => (is => 'ro', isa => 'Str'         );
   has 'Cars'  => (is => 'ro', isa => 'HashRef[Car]'); # Was 'ArrayRef[Car]'
 
-and noting that the car C<make> is unique within the C<$data> dataset, we
-could construct the reference to an array of objects with the call:
+and noting that the car C<make> is unique for each person in the C<$data> dataset, we
+construct the reference to an array of objects with the call:
 
   $CarOwners = array_to_moose(
                       data => $data,
@@ -475,6 +677,43 @@ could construct the reference to an array of objects with the call:
   );
 
   print $CarOwners->[2]->Cars->{BMW}->model; # prints 'X5'
+
+=head2 Example 1c - "Simple" Reference Attributes
+
+If, instead of the car owner object containing an ArrayRef or HashRef of
+C<Car> sub-objects, it contains, say, a ArrayRef of strings representing the
+names of the car makers:
+
+  package SimpleCarOwner;
+  use Moose;
+
+  has 'last'      => (is => 'ro', isa => 'Str'          );
+  has 'first'     => (is => 'ro', isa => 'Str'          );
+  has 'CarMakers' => (is => 'ro', isa => 'ArrayRef[Str]');
+
+Using the same dataset from Example 1a, we construct an arrayref
+C<SimpleCarOwner> objects as:
+
+  $SimpleCarOwners = array_to_moose(
+                        data => $data,
+                        desc => {
+                          class     => 'SimpleCarOwner',
+                          last      => 0,
+                          first     => 1,
+                          CarMakers => [2],  # Note the '[...]' brackets
+                        }
+  );
+
+  print $SimpleCarOwners->[2]->[1];   # prints 'Toyota'
+
+I.e., when the object attribute is an I<ArrayRef> of one of the Moose "simple" types,
+e.g. C<'Str'>, C<'Num'>, C<'Bool'>,
+etc (See L<Moose::Manual::Types|THE TYPES>), then the column number should
+appear in square brackets ('C<CarMakers =E<gt> [2]>' above) to differentiate them from the bare
+types (C<last =E<gt> 0,> and C<first =E<gt> 1,> above).
+
+Note that Array::To::Moose doesn't (yet) handle the case of hashrefs of
+"simple" types, e.g., C<( isa =E<gt> "HashRef[Str]" )>
 
 =head2 Example 2 - Use with DBI
 
@@ -569,7 +808,7 @@ In the main program:
 
   print $patients->[2]->Visits->[0]->Tests->{BP}->result; # prints '120/80'
 
-Note: We used the Test C<name> as the key for the Visis 'C<Tests>', as the
+Note: We used the Test C<name> as the key for the Visit 'C<Tests>', as the
 tests have unique names within any one Visit.
 (See t/5.t)
 
@@ -579,6 +818,7 @@ As shown in the above examples, the general usage is:
 
   package MyClass;
   use Moose;
+  (define Moose object(s))
   ...
   use Array::To::Moose;
   ...
@@ -588,9 +828,11 @@ As shown in the above examples, the general usage is:
                         data => $data_ref
                         desc => {
                           class    => 'MyClass',
-                          key      => <key_col>,   # only for HashRefs
-                          attrib_1 => <column_number_1>,
-                          attrib_2 => <column_number_2>,
+                          key      => K,   # only for HashRefs
+                          attrib_1 => N1,
+                          attrib_2 => N2,
+                          ...
+                          attrib_m => [ M ],
                           ...
                           SubObject => {
                             class => 'MySubClass',
@@ -601,28 +843,35 @@ As shown in the above examples, the general usage is:
 
 Where:
 
-C<$object_ref> will contain a reference to an array or hash of C<MyClass>
-Moose objects. All Moose classes (C<MyClass>, C<MySubClass>, etc) must
-already have been defined.
+C<array_to_moose()> returns an array- or hash reference of C<MyClass>
+Moose objects.
+All Moose classes (C<MyClass>, C<MySubClass>, etc) must
+already have been defined by the user.
 
 C<$data_ref> is a reference to an array containing references to arrays of
-scalars (AoA) of the kind returned by
+scalars of the kind returned by, e.g.,
 L<DBI::selectall_arrayref()|DBI/selectall_arrayref>
 
 C<desc> (descriptor) is a reference to a hash which contains several types
 of data:
 
-C<class =E<gt>> ... is I<required> and defines the Moose class or
+C<class =E<gt>> 'MyObj' is I<required> and defines the Moose class or
 package which will contain the data. The user should have defined this class
 already.
 
-C<key =E<gt> >... is required
-if the Moose object being constructed is to be a hashref, either as
+C<key =E<gt> N > is required
+if the Moose object being constructed is to be a hashref, either at
 the top-level Moose object returned from C<array_to_moose()> or as a
 "C<isa =E<gt> 'HashRef[...]'>" sub-object.
 
 C<attrib =E<gt> N > where C<attrib> is the name of a Moose attribute
-("C<has 'attrib' =E<gt>> ..."), C<N> is a positive integer containing the
+("C<has 'attrib' =E<gt>> ...") 
+
+C<attrib =E<gt> [ N ] > where C<attrib> is the name of a Moose "simple" sub-attribute
+("C<has =E<gt> 'attrib' ( isa =E<gt> 'ArrayRef[Type]' ...)> "), where C<Type>
+is a "simple" Moose type, e.g., C<'Str', 'Int'>, etc.
+
+In the above cases, C<N> is a positive integer containing the
 the corresponding zero-indexed
 column number in the data array where that attribute's data is to be found.
 
@@ -632,15 +881,15 @@ C<array_to_moose()> can handle three types of Moose sub-objects, i.e.:
 
 an array of sub-objects:
 
-  has => Sub_Obj ( isa => 'ArrayRef[MyObj]' );
+  has => 'Sub_Obj' ( isa => 'ArrayRef[MyObj]' );
 
 a hash of sub-objects:
 
-  has => Sub_Obj ( isa => 'HashRef[MyObj]'  );
+  has => 'Sub_Obj' ( isa => 'HashRef[MyObj]'  );
 
 or a single sub-object:
 
-  has => Sub_Obj ( isa => 'MyObj'           );
+  has => 'Sub_Obj' ( isa => 'MyObj'           );
 
 the descriptor entry for C<Sub_Obj> in each of these cases is (almost) the same:
 
@@ -658,6 +907,13 @@ the descriptor entry for C<Sub_Obj> in each of these cases is (almost) the same:
 
 (A C<HashRef[']> sub-object will also I<require> a
 C<key =E<gt> N> entry in the descriptor).
+
+In addition, C<array_to_moose()> can also handle C<ArrayRef>s of "simple"
+types:
+
+  has => 'Sub_Obj' ( isa => 'ArrayRef[Type]' );
+
+where C<Type> is a "simple" Moose type, e.g., C<'Str', 'Int, 'Bool'>, etc.
 
 =head2 Ordering the data
 
@@ -874,13 +1130,13 @@ This truth table demonstrates the various combinations:
 
 =head1 EXPORT
 
-C<array_to_moose> by default; and C<set_class_ind> and
-C<set_key_ind> if requested.
+C<array_to_moose> by default; C<throw_nonunique_keys>, C<throw_multiple_rows>,
+C<set_class_ind> and C<set_key_ind> if requested.
 
 =head1 DIAGNOSTICS
 
 Errors in the call of C<array-to-moose()> will be caught by
-L<Params::Validate>, q.v.
+L<Params::Validate::Array>, q.v.
 
 <array-to-moose> does a lot of error checking, and is probably annoyingly
 chatty. Most of the errors generated are, of course, self-explanatory :-)
@@ -888,12 +1144,16 @@ chatty. Most of the errors generated are, of course, self-explanatory :-)
 =head1 DEPENDENCIES
 
   Carp
-  Params::Validate
+  Params::Validate::Array
   Array::GroupBy
 
 =head1 SEE ALSO
 
 L<DBI>, L<Moose>, L<Array::GroupBy>
+
+=head1 BUGS
+
+The handling of Moose type constraints is primitive.
 
 =head1 AUTHOR
 
@@ -924,19 +1184,21 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  5 Jan 2013 21:43   #
+#   on  1 Apr 2014 13:41   #
 #                          #
 ############################
 
 
 ####### Packages ###########
 
-# Array::To::Moose ....................... 1
-#   array_to_moose ....................... 3
-#   set_class_ind ........................ 2
-#   set_key_ind .......................... 1
-#   throw_multiple_rows .................. 2
-#   throw_nonunique_keys ................. 2
-#   _check_attribs ....................... 2
-#   _check_types ......................... 5
+# Array::To::Moose ......................... 1
+#   array_to_moose ......................... 2
+#   set_class_ind .......................... 2
+#   set_key_ind ............................ 2
+#   throw_multiple_rows .................... 2
+#   throw_nonunique_keys ................... 2
+#   _check_descriptor ...................... 4
+#   _check_non_ref_attribs ................. 9
+#   _check_ref_attribs ..................... 8
+#   _check_subobj .......................... 6
 

@@ -1,4 +1,0 @@
-1.t basic testing of _check_attrib_names(), incl 'class =>'
-2.t testing of _check_attrib_limits()
-3.t construction of objects by atm()
-

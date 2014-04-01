@@ -1,5 +1,9 @@
 Revision history for Array-To-Moose
 
+0.04  Tuesday 01 April 2014
+
+  - Added capability for arrayrefs of "simple" types, like 'Str', 'Int', etc.
+
 0.03  Saturday 05 Jan 2013
 
   - Oops! Left in a "use VarianReports" in many of the test files

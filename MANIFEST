@@ -1,6 +1,5 @@
 Build.PL
 Changes
-ignore.txt
 lib/Array/To/Moose.pm
 MANIFEST			This list of files
 META.json
@@ -15,6 +14,7 @@ t/4.t
 t/4a.t
 t/4b.t
 t/4c.t
+t/4d.t
 t/5.t
 t/5a.t
 t/6.t
@@ -25,11 +25,7 @@ t/8b.t
 t/8c.t
 t/8d.t
 t/9.t
-t/pod-coverage.t
 t/pod.t
-t/readme.txt
 t/release-eol.t
 t/release-no-tabs.t
 t/release-pod-coverage.t
-t/tests.txt
-t/TODO

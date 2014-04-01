@@ -15,7 +15,7 @@ BEGIN {
   plan skip_all => "Test::Exception needed" if $@;
 }
 
-plan tests => 10;
+plan tests => 11;
 
 #----------------------------------------
 package Patient;
@@ -159,5 +159,28 @@ throws_ok { array_to_moose ( data => $data,
                                        }
                                      }
                                       )
+                      } qr/Moose class 'Typeless', attrib 'that' has no type/,
+                      "typeless sub-object attribute";
+
+package Typeless1;
+use Moose;
+use MooseX::StrictConstructor;
+use namespace::autoclean;
+
+has [ qw(this that) ] => (is => 'rw', isa => 'Str');
+has         'SubObj'  => (is => 'rw');  # no types!
+
+__PACKAGE__->meta->make_immutable;
+package main;
+
+throws_ok { array_to_moose ( data => $data,
+                             desc => { class => 'Typeless1',
+                                       that => 0,
+                                       SubObj => {
+                                         other => 1,
+                                       }
+                                     }
+                                      )
                       } qr/Moose attribute 'SubObj' has no type/,
                       "typeless sub-object attribute";
+

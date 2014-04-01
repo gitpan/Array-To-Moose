@@ -4,7 +4,7 @@
       "Sam Brain <samb@stanford.edu>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110930",
+   "generated_by" : "Module::Build version 0.4205",
    "license" : [
       "perl_5"
    ],
@@ -21,22 +21,22 @@
       },
       "runtime" : {
          "requires" : {
-            "Array::GroupBy" : 0,
-            "Carp" : 0,
-            "Data::Dumper" : 0,
-            "Moose" : 0,
-            "MooseX::StrictConstructor" : 0,
-            "Params::Validate" : 0,
-            "Test::More" : 0,
-            "namespace::autoclean" : 0,
-            "version" : 0
+            "Array::GroupBy" : "0",
+            "Carp" : "0",
+            "Data::Dumper" : "0",
+            "Moose" : "0",
+            "MooseX::StrictConstructor" : "0",
+            "Params::Validate" : "0",
+            "Test::More" : "0",
+            "namespace::autoclean" : "0",
+            "version" : "0"
          }
       }
    },
    "provides" : {
       "Array::To::Moose" : {
          "file" : "lib/Array/To/Moose.pm",
-         "version" : "v0.0.3"
+         "version" : "v0.0.4"
       }
    },
    "release_status" : "stable",
@@ -45,5 +45,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "v0.0.3"
+   "version" : "v0.0.4"
 }

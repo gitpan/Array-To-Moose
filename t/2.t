@@ -4,8 +4,8 @@ use strict;
 
 use Test::More;
 
-# More testing of internal function _check_attribs(),
-# mostly testing column values
+# More testing of internal function _check_descriptor(),
+# mostly testing column values, e.g. limits
 
 
 use Array::To::Moose qw(:TESTING);
@@ -15,7 +15,7 @@ BEGIN {
   plan skip_all => "Test::Exception needed" if $@;
 }
 
-plan tests => 6;
+plan tests => 11;
 
 #----------------------------------------
 package Person;
@@ -23,7 +23,8 @@ use namespace::autoclean;
 use Moose;
 use MooseX::StrictConstructor;
 
-has [ qw( name gender ) ] => (is => 'rw', isa => 'Str');
+has [ qw( name gender ) ] => (is => 'rw', isa =>          'Str' );
+has hobbies               => (is => 'rw', isa => 'ArrayRef[Str]');
 
 __PACKAGE__->meta->make_immutable;
 
@@ -42,31 +43,59 @@ my $data = [ $n1, $n2, $n3, $n4 ];
 
 
 lives_ok {
-  _check_attribs($data, { class => 'Person', name => 1 })
-         } '_check_attribs() OK';
+  _check_descriptor($data,
+      { class => 'Person', name => 0, gender => 1, hobbies => [2] }
+                   )
+         } '_check_descriptor() with ref attribs OK';
 
 throws_ok {
-  _check_attribs($data, { class => 'Person', name => 3 })
+  _check_descriptor($data, { class => 'Person', name => 3 })
 } qr/attribute 'name => 3' greater than # cols in the data \(3\)/s,
-  '_check_attribs() attrib column number too big';
+  '_check_descriptor() attrib column number too big';
 
 throws_ok {
-  _check_attribs($data, { class => 'Person', key => 3, gender => 2 })
+  _check_descriptor($data, { class => 'Person', hobbies => 3 })
+} qr/attribute 'hobbies => 3' greater than # cols in the data \(3\)/s,
+  '_check_descriptor() attrib column number too big';
+
+throws_ok {
+  _check_descriptor($data, { class => 'Person', key => 3, gender => 2 })
 } qr/attribute 'key => 3' greater than # cols in the data \(3\)/s,
-  "_check_attribs() 'key' column number too big";
+  "_check_descriptor() 'key' column number too big";
 
 throws_ok {
-  _check_attribs($data, { class => 'Person', name => -1 })
-} qr/attribute 'name => -1' must be a \+ve integer/s,
-  '_check_attribs() attrib column number negative';
+  _check_descriptor($data, { class => 'Person', name => -1 })
+} qr/attribute 'name => -1' must be a \(non-negative\) integer/s,
+  '_check_descriptor() attrib column number negative';
 
 throws_ok {
-  _check_attribs($data, { class => 'Person', name => 'x' })
-  ##_check_attribs( $n1, { N => 'x' } );
-} qr/attribute 'name => x' must be a \+ve integer/s,
-  '_check_attribs() attrib column not an integer';
+  _check_descriptor($data, { class => 'Person', hobbies => [-1] })
+} qr/attribute 'hobbies => \[ -1 \]'. '-1' must be a \(non-negative\) integer/s,
+  '_check_descriptor() ref attrib column number negative';
 
 throws_ok {
-  _check_attribs($data, { class => 'Person', name => 1.5 })
-} qr/attribute 'name => 1.5' must be a \+ve integer/,
-  '_check_attribs() attrib columns number is fractional';
+  _check_descriptor($data, { class => 'Person', name => 'x' })
+  ##_check_descriptor( $n1, { N => 'x' } );
+} qr/attribute 'name => x' must be a \(non-negative\) integer/s,
+  '_check_descriptor() attrib column not an integer';
+
+throws_ok {
+  _check_descriptor($data, { class => 'Person', name => 1.5 })
+} qr/attribute 'name => 1.5' must be a \(non-negative\) integer/,
+  '_check_descriptor() attrib columns number is fractional';
+
+throws_ok {
+  _check_descriptor($data, { class => 'Person', hobbies => [1.5] })
+} qr/attribute 'hobbies => \[ 1.5 \]'. '1.5' must be a \(non-negative\) integer/,
+  '_check_descriptor() attrib columns number is fractional';
+
+# attribute a sub{} reference
+throws_ok {
+  _check_descriptor($data, { class => 'Person', hobbies => sub { 3 } })
+} qr/attribute 'hobbies' can't be a 'CODE' reference/,
+  '_check_descriptor() attrib is a sub {}';
+
+throws_ok {
+  _check_descriptor($data, { class => 'Person', hobbies => [3] })
+} qr/attribute 'hobbies => \[ 3 \]'.* greater than # cols in the data \(3\)/s,
+  '_check_descriptor() attrib column in [] too big';
