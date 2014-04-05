@@ -1,4 +1,4 @@
-Array-To-Moose version 0.0.4
+Array-To-Moose version 0.0.5
 
 Array::To::Moose builds Moose objects from suitably-sorted 2-dimensional
 arrays of data, of the kind returned by routines like
@@ -33,7 +33,7 @@ DEPENDENCIES
 TODO
   (1) Add capability for handling, e.g. 
     has 'attrib' => ( isa => 'ArrayRef[Str]' );
-    DONE! (version 4)
+    DONE! (version 5)
 
 COPYRIGHT AND LICENCE
 

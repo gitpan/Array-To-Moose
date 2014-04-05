@@ -29,7 +29,7 @@ our @EXPORT = qw( array_to_moose
 
 );
 
-use version; our $VERSION = qv('0.0.4');
+use version; our $VERSION = qv('0.0.5');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -549,7 +549,7 @@ Array::To::Moose - Build Moose objects from a data array
 
 =head1 VERSION
 
-This document describes Array::To::Moose version 0.0.4
+This document describes Array::To::Moose version 0.0.5
 
 =head1 SYNOPSIS
 
@@ -1184,7 +1184,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  1 Apr 2014 13:41   #
+#   on  4 Apr 2014 20:42   #
 #                          #
 ############################
 

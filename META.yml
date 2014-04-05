@@ -15,17 +15,17 @@ name: Array-To-Moose
 provides:
   Array::To::Moose:
     file: lib/Array/To/Moose.pm
-    version: v0.0.4
+    version: v0.0.5
 requires:
   Array::GroupBy: 0
   Carp: 0
   Data::Dumper: 0
   Moose: 0
   MooseX::StrictConstructor: 0
-  Params::Validate: 0
+  Params::Validate::Array: 0
   Test::More: 0
   namespace::autoclean: 0
   version: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: v0.0.4
+version: v0.0.5

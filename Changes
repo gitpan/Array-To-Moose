@@ -1,5 +1,9 @@
 Revision history for Array-To-Moose
 
+0.05  Friday 04 April 2014
+
+  - Changed dependence from Params::Validate to Paramas::Validate::Array
+
 0.04  Tuesday 01 April 2014
 
   - Added capability for arrayrefs of "simple" types, like 'Str', 'Int', etc.
