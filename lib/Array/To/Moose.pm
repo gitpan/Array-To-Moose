@@ -18,9 +18,9 @@ use base qw( Exporter );
 our %EXPORT_TAGS = (
     'ALL'     => [ qw( array_to_moose
                        throw_nonunique_keys throw_multiple_rows
-                       set_class_ind set_key_ind               ) ],
+                       set_class_ind set_key_ind                 ) ],
     'TESTING' => [ qw( _check_descriptor _check_subobj
-                       _check_rattribs                         ) ],
+                       _check_ref_attribs _check_non_ref_attribs ) ],
 );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'ALL'} }, @{ $EXPORT_TAGS{'TESTING'} } );
@@ -29,7 +29,7 @@ our @EXPORT = qw( array_to_moose
 
 );
 
-use version; our $VERSION = qv('0.0.5');
+use version; our $VERSION = qv('0.0.6');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -476,7 +476,7 @@ sub _check_ref_attribs {
   my $meta = $class->meta
     or croak "No meta for class '$class'?";
 
-  foreach my $attrib ( keys $ref_attribs ) {
+  foreach my $attrib ( keys %{ $ref_attribs } ) {
     my $msg = "Moose class '$class' ref attrib '$attrib' ";
 
     my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
@@ -506,8 +506,9 @@ sub _check_ref_attribs {
 #
 # where:
 #   $class is the current Moose class
-#   @non_ref_attribs an array of names of Moose attributes which are 
+#   $non_ref_attribs an hashref of Moose attributes which are 
 #   non-reference, or "simple" attributes like 'Str', 'Int', etc.
+#   The key is the attribute name, the value the type
 #
 ########################################
 sub _check_non_ref_attribs {
@@ -516,7 +517,7 @@ sub _check_non_ref_attribs {
   my $meta = $class->meta
     or croak "No meta for class '$class'?";
 
-  foreach my $attrib ( keys $attribs) {
+  foreach my $attrib ( keys %{ $attribs } ) {
     my $msg = "Moose class '$class', attrib '$attrib'";
 
     my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
@@ -549,7 +550,7 @@ Array::To::Moose - Build Moose objects from a data array
 
 =head1 VERSION
 
-This document describes Array::To::Moose version 0.0.5
+This document describes Array::To::Moose version 0.0.6
 
 =head1 SYNOPSIS
 
@@ -1184,7 +1185,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  4 Apr 2014 20:42   #
+#   on  6 Apr 2014 22:07   #
 #                          #
 ############################
 

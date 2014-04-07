@@ -10,7 +10,7 @@ use Test::More;
 #
 # Also test attributes with names "class" & "key" stuff, including when class
 # & key are redefined
-# also test set_{key,class}_ind() with values not an identifier
+# also test set_key_ind(), set_class_ind() with values not an identifier
 
 use Array::To::Moose qw(:ALL :TESTING);
 
