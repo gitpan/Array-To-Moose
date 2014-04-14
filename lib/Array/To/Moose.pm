@@ -29,7 +29,7 @@ our @EXPORT = qw( array_to_moose
 
 );
 
-use version; our $VERSION = qv('0.0.6');
+use version; our $VERSION = qv('0.0.7');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -141,13 +141,6 @@ sub array_to_moose {
   #      "\nargs = ", Dumper([ values %$attribs ]);
 
   #print "\$ref_attribs ", Dumper($ref_attribs); exit;
-
-  # check ref- and non-ref attributes from the descriptor against the Moose object
-  _check_non_ref_attribs($class, $attribs)
-    if $attribs;
-
-  _check_ref_attribs($class, $ref_attribs)
-    if $ref_attribs;
 
   my $iter = igroup_by(
                 data    => $data,
@@ -303,8 +296,9 @@ sub _check_descriptor {
       #
       # ( or attrib => [key => 6, value => 7],  in future... ?)
 
-      croak "attribute must be of form, e.g.: '$name => [6],'"
-        unless @$value == 1;
+      croak "attribute must be of form, e.g.: '$name => [N], "
+            . "where N is a single integer'"
+          unless @$value == 1;
 
       my $msg = "attribute '$name => [ " . $value->[0] . " ]'. '" .
                   $value->[0] . "'";
@@ -326,6 +320,15 @@ sub _check_descriptor {
     }
   }
 
+
+  # check ref- and ...
+  _check_ref_attribs($class, $ref_attrib)
+    if $ref_attrib;
+
+  # ... non-ref attributes from the descriptor against the Moose object
+  _check_non_ref_attribs($class, $attrib)
+    if $attrib;
+
   croak "no attributes with column numbers in descriptor:\n", Dumper($desc)
     unless $attrib and %$attrib;
 
@@ -340,7 +343,8 @@ sub _check_descriptor {
 #               MyObjs => { ... } (used only diagnostic messages)
 # $type         is the expected Moose type of the sub-object
 #               i.e. 'HashRef[MyObj]', 'ArrayRef[MyObj]', or 'MyObj'
-# $sub_obj_ref  Reference to the data to be stored in the sub-object,
+# $sub_obj_ref  Reference to the data (just returned from a recursive call to
+#               array_to_moose() ) to be stored in the sub-object,
 #               i.e. isa => 'HashRef[MyObj]', isa => 'ArrayRef[MyObj]',
 #               or isa => 'MyObj'
 #
@@ -387,8 +391,8 @@ sub _check_subobj {
           . "of type '" . ref($sub_obj) . "'\n"
       if ref($sub_obj) ne 'ARRAY';
 
-    croak "Moose attribute '$attr_name' has type '$type'"
-          . "but your descriptor produced an object"
+    croak "Moose attribute '$attr_name' has type '$type' "
+          . "but your descriptor produced an object "
           . "of type 'ArrayRef[" . ref( $sub_obj->[0] ) . "]'\n"
       if ref( $sub_obj->[0] ) ne $1;
 
@@ -399,8 +403,10 @@ sub _check_subobj {
     # objects, $sub_obj will be an arrayref of Moose objects, which we convert to a
     # ref to an object
 
-    croak "desc generated a '" . ref $sub_obj
-          . "' object and not the expected array"
+    croak "Moose attribute '$attr_name' has type '$type' "
+          . "but your descriptor generated a '"
+          . ref($sub_obj)
+          . "' object and not the expected ARRAY"
       unless ref $sub_obj eq 'ARRAY';
 
     # optionally give error if we got more than one row
@@ -413,9 +419,9 @@ sub _check_subobj {
 
     # print "\$sub_obj type is ", ref($sub_obj), "\n";
 
-    croak "Moose attribute '$attr_name' has type '$type'\n"
-          . "but your descriptor produced an object\n"
-          . "of type '" . ref( $sub_obj ) . "'\n"
+    croak "Moose attribute '$attr_name' has type '$type' "
+          . "but your descriptor produced an object "
+          . "of type '" . ref( $sub_obj ) . "'"
       unless ref( $sub_obj ) eq $type;
   }
   return $sub_obj;
@@ -477,7 +483,7 @@ sub _check_ref_attribs {
     or croak "No meta for class '$class'?";
 
   foreach my $attrib ( keys %{ $ref_attribs } ) {
-    my $msg = "Moose class '$class' ref attrib '$attrib' ";
+    my $msg = "Moose class '$class' ref attrib '$attrib'";
 
     my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
       or croak "$msg has no type constraint";
@@ -550,7 +556,7 @@ Array::To::Moose - Build Moose objects from a data array
 
 =head1 VERSION
 
-This document describes Array::To::Moose version 0.0.6
+This document describes Array::To::Moose version 0.0.7
 
 =head1 SYNOPSIS
 
@@ -1185,7 +1191,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on  6 Apr 2014 22:07   #
+#   on 13 Apr 2014 22:53   #
 #                          #
 ############################
 

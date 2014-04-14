@@ -137,8 +137,8 @@ throws_ok { array_to_moose(
                         }
                           );
            }
-  qr/'Person_no_type' ref attrib 'no_type'  has no type constraint/,
-  "Moose simple attribute has no type";
+  qr/'Person_no_type' ref attrib 'no_type' has no type constraint/,
+  "Moose ref attribute has no type";
 
 
 # has attribute 'non_simple' which is an arrayref of type

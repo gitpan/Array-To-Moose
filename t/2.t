@@ -15,7 +15,7 @@ BEGIN {
   plan skip_all => "Test::Exception needed" if $@;
 }
 
-plan tests => 11;
+plan tests => 12;
 
 #----------------------------------------
 package Person;
@@ -87,7 +87,7 @@ throws_ok {
 throws_ok {
   _check_descriptor($data, { class => 'Person', hobbies => [1.5] })
 } qr/attribute 'hobbies => \[ 1.5 \]'. '1.5' must be a \(non-negative\) integer/,
-  '_check_descriptor() attrib columns number is fractional';
+  '_check_descriptor() ref attrib column number [N] fractional';
 
 # attribute a sub{} reference
 throws_ok {
@@ -99,3 +99,8 @@ throws_ok {
   _check_descriptor($data, { class => 'Person', hobbies => [3] })
 } qr/attribute 'hobbies => \[ 3 \]'.* greater than # cols in the data \(3\)/s,
   '_check_descriptor() attrib column in [] too big';
+
+throws_ok {
+  _check_descriptor($data, { class => 'Person', hobbies => [0, 1] })
+} qr/attribute must be of form.*single integer/,
+  '_check_descriptor() attrib column of form [n, m]';
