@@ -1,4 +1,4 @@
-Array-To-Moose version 0.0.7
+Array-To-Moose version 0.0.8
 
 Array::To::Moose builds Moose objects from suitably-sorted 2-dimensional
 arrays of data, of the kind returned by routines like
@@ -31,9 +31,8 @@ DEPENDENCIES
   Data::Dumper
 
 TODO
-  (1) Add capability for handling, e.g. 
-    has 'attrib' => ( isa => 'ArrayRef[Str]' );
-    DONE! (version 5)
+  (1) Smarten up type contstraint handling a la Moose::Util::TypeConstraints
+      Currently only handles 'Str', 'Int', etc.
 
 COPYRIGHT AND LICENCE
 

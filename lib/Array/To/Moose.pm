@@ -29,7 +29,7 @@ our @EXPORT = qw( array_to_moose
 
 );
 
-use version; our $VERSION = qv('0.0.7');
+use version; our $VERSION = qv('0.0.8');
 
 # BEGIN { $Exporter::Verbose=1 };
 
@@ -529,7 +529,13 @@ sub _check_non_ref_attribs {
     my $constraint = $meta->find_attribute_by_name($attrib)->type_constraint
       or croak "$msg has no type (isa => ...)";
 
-    #print "_check_non_ref_attribs(): $attrib $constraint\n";
+    #print "_check_non_ref_attribs(): $attrib '$constraint'\n";
+
+    # kludge for Maybe[`]
+    $constraint =~ /^Maybe\[([^]]+)\]/;
+    $constraint = $1 if $1;
+
+    #print " after: $attrib '$constraint'\n";
 
     next if $simple_types{$constraint};
 
@@ -556,7 +562,7 @@ Array::To::Moose - Build Moose objects from a data array
 
 =head1 VERSION
 
-This document describes Array::To::Moose version 0.0.7
+This document describes Array::To::Moose version 0.0.8
 
 =head1 SYNOPSIS
 
@@ -1191,7 +1197,7 @@ at your option, any later version of Perl 5 you may have available.
 ##### SUBROUTINE INDEX #####
 #                          #
 #   gen by index_subs.pl   #
-#   on 13 Apr 2014 22:53   #
+#   on 24 Apr 2014 21:11   #
 #                          #
 ############################
 
